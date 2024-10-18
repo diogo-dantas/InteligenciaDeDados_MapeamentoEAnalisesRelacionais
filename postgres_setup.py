@@ -28,7 +28,7 @@ class PostgresConnector:
             'port': port
         }
 
-    self.setup_logging()
+        self.setup_logging()
 
     """Configura o logging para registro de operações no diretório log_dir (criado)"""
 
