@@ -47,3 +47,14 @@ self.setup_logging()
             level=logging.INFO,
             format='%(asctime)s - %(levelname)s - %(message)s'
         )
+
+"""Cria uma conexão com o banco de dados"""
+
+def create_connection(self):
+        try:
+            conn = psycopg2.connect(**self.credentials)
+            return conn
+        except Error as e:
+            logging.error(f"Erro ao conectar ao PostgreSQL: {str(e)}")
+            raise
+
