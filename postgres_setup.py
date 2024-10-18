@@ -58,3 +58,30 @@ def create_connection(self):
             logging.error(f"Erro ao conectar ao PostgreSQL: {str(e)}")
             raise
 
+""" Executa uma query e retorna os dados como DataFrame """
+
+def execute_query(
+        self, 
+        query: str, 
+        params: tuple = None,
+        return_data: bool = True
+    ) -> Optional[pd.DataFrame]:		
+		try:
+            with self.create_connection() as conn:
+                if return_data:
+                    if params:
+                        return pd.read_sql_query(query, conn, params=params)
+                    return pd.read_sql_query(query, conn)
+                else:
+                    cur = conn.cursor()
+                    if params:
+                        cur.execute(query, params)
+                    else:
+                        cur.execute(query)
+                    conn.commit()
+                    logging.info(f"Query executed successfully: {query[:100]}...")
+                    return None
+                    
+        except Error as e:
+            logging.error(f"Erro ao executar a Query: {str(e)}\nQuery: {query}")
+            raise
