@@ -32,7 +32,7 @@ self.setup_logging()
 
 """Configura o logging para registro de operações no diretório log_dir (criado)"""
 
- def setup_logging(self):
+    def setup_logging(self):
         log_dir = 'logs'
         if not os.path.exists(log_dir):
             os.makedirs(log_dir)
@@ -50,7 +50,7 @@ self.setup_logging()
 
 """Cria uma conexão com o banco de dados"""
 
-def create_connection(self):
+	def create_connection(self):
         try:
             conn = psycopg2.connect(**self.credentials)
             return conn
@@ -60,7 +60,7 @@ def create_connection(self):
 
 """ Executa uma query e retorna os dados como DataFrame """
 
-def execute_query(
+	def execute_query(
         self, 
         query: str, 
         params: tuple = None,
@@ -88,7 +88,7 @@ def execute_query(
 
 """Cria as tabelas necessárias do banco de dados para o projeto """
 
-    def create_database_tables(self):
+	def create_database_tables(self):
         create_tables_sql = {
             'dados_origem': """
             CREATE TABLE IF NOT EXISTS dados_origem (
@@ -134,7 +134,7 @@ def execute_query(
 
 """ Insere dados em uma tabela """            
     
-       def insert_data(self, table: str, data: Dict):
+	def insert_data(self, table: str, data: Dict):
         columns = ', '.join(data.keys())
         values = ', '.join(['%s'] * len(data))
         query = f"""
@@ -142,5 +142,18 @@ def execute_query(
         VALUES ({values})
         RETURNING *;
         """
-        return self.execute_query(query, tuple(data.values()))
-    
+        return self.execute_query(query, tuple(data.values()))       
+
+""" Retorna informações sobre a estrutura de uma tabela  aproveitando o método execute_query"""
+
+	def get_table_info(self, table: str) -> pd.DataFrame:
+        query = """
+        SELECT 
+            column_name, 
+            data_type, 
+            character_maximum_length,
+            is_nullable
+        FROM information_schema.columns
+        WHERE table_name = %s;
+        """
+        return self.execute_query(query, (table,))         
