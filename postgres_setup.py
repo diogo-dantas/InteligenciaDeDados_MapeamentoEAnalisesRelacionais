@@ -50,7 +50,7 @@ class PostgresConnector:
 
     """Cria uma conexão com o banco de dados"""
 
-def create_connection(self):
+    def create_connection(self):
         try:
             conn = psycopg2.connect(**self.credentials)
             return conn
@@ -58,37 +58,37 @@ def create_connection(self):
             logging.error(f"Erro ao conectar ao PostgreSQL: {str(e)}")
             raise
 
-""" Executa uma query e retorna os dados como DataFrame """
+    """ Executa uma query e retorna os dados como DataFrame """
 
-def execute_query(
-    self, 
-    query: str, 
-    params: tuple = None,
-    return_data: bool = True
-) -> Optional[pd.DataFrame]:
-    try:
-        with self.create_connection() as conn:
-            if return_data:
-                if params:
-                    return pd.read_sql_query(query, conn, params=params)
-                return pd.read_sql_query(query, conn)
-            else:
-                cur = conn.cursor()
-                if params:
-                    cur.execute(query, params)
+    def execute_query(
+        self, 
+        query: str, 
+        params: tuple = None,
+        return_data: bool = True
+        ) -> Optional[pd.DataFrame]:
+        try:
+            with self.create_connection() as conn:
+                if return_data:
+                    if params:
+                        return pd.read_sql_query(query, conn, params=params)
+                    return pd.read_sql_query(query, conn)
                 else:
-                    cur.execute(query)
-                conn.commit()
-                logging.info(f"Query executed successfully: {query[:100]}...")
-                return None
-    except Error as e:
-        logging.error(f"Erro ao executar a Query: {str(e)}\nQuery: {query}")
-        raise
+                    cur = conn.cursor()
+                    if params:
+                        cur.execute(query, params)
+                    else:
+                        cur.execute(query)
+                    conn.commit()
+                    logging.info(f"Query executed successfully: {query[:100]}...")
+                    return None
+        except Error as e:
+            logging.error(f"Erro ao executar a Query: {str(e)}\nQuery: {query}")
+            raise
 
 
-"""Cria as tabelas necessárias do banco de dados para o projeto """
+    """Cria as tabelas necessárias do banco de dados para o projeto """
 
-def create_database_tables(self):
+    def create_database_tables(self):
         create_tables_sql = {
             'dados_origem': """
             CREATE TABLE IF NOT EXISTS dados_origem (
@@ -132,9 +132,9 @@ def create_database_tables(self):
             logging.info(f"Creating table: {table_name}")
             self.execute_query(sql, return_data=False)
 
-""" Insere dados em uma tabela """            
+    """ Insere dados em uma tabela """            
     
-def insert_data(self, table: str, data: Dict):
+    def insert_data(self, table: str, data: Dict):
         columns = ', '.join(data.keys())
         values = ', '.join(['%s'] * len(data))
         query = f"""
@@ -144,9 +144,9 @@ def insert_data(self, table: str, data: Dict):
         """
         return self.execute_query(query, tuple(data.values()))       
 
-""" Retorna informações sobre a estrutura de uma tabela  aproveitando o método execute_query"""
+    """ Retorna informações sobre a estrutura de uma tabela  aproveitando o método execute_query"""
 
-def get_table_info(self, table: str) -> pd.DataFrame:
+    def get_table_info(self, table: str) -> pd.DataFrame:
         query = """
         SELECT 
             column_name, 
