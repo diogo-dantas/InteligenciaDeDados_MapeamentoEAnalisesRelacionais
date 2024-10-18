@@ -131,4 +131,16 @@ def execute_query(
         for table_name, sql in create_tables_sql.items():
             logging.info(f"Creating table: {table_name}")
             self.execute_query(sql, return_data=False)
+
+""" Insere dados em uma tabela """            
+    
+       def insert_data(self, table: str, data: Dict):
+        columns = ', '.join(data.keys())
+        values = ', '.join(['%s'] * len(data))
+        query = f"""
+        INSERT INTO {table} ({columns})
+        VALUES ({values})
+        RETURNING *;
+        """
+        return self.execute_query(query, tuple(data.values()))
     
