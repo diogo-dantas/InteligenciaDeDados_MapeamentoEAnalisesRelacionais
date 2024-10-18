@@ -85,3 +85,50 @@ def execute_query(
         except Error as e:
             logging.error(f"Erro ao executar a Query: {str(e)}\nQuery: {query}")
             raise
+
+"""Cria as tabelas necessárias do banco de dados para o projeto """
+
+    def create_database_tables(self):
+        create_tables_sql = {
+            'dados_origem': """
+            CREATE TABLE IF NOT EXISTS dados_origem (
+                id_origem SERIAL PRIMARY KEY,
+                nome_origem VARCHAR(255) NOT NULL,
+                tipo_dado VARCHAR(100) NOT NULL,
+                volume INTEGER,
+                latencia VARCHAR(50),
+                descricao TEXT,
+                criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+            """,
+            
+            'fluxo_dados': """
+            CREATE TABLE IF NOT EXISTS fluxo_dados (
+                id_fluxo SERIAL PRIMARY KEY,
+                id_origem INTEGER NOT NULL,
+                destino VARCHAR(255) NOT NULL,
+                status VARCHAR(50) DEFAULT 'ativo',
+                data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                data_atualizacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (id_origem) REFERENCES dados_origem(id_origem)
+            );
+            """,
+            
+            'analises': """
+            CREATE TABLE IF NOT EXISTS analises (
+                id_analise SERIAL PRIMARY KEY,
+                id_fluxo INTEGER NOT NULL,
+                hipoteses TEXT,
+                resultado TEXT,
+                data_analise TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                responsavel VARCHAR(255),
+                FOREIGN KEY (id_fluxo) REFERENCES fluxo_dados(id_fluxo)
+            );
+            """
+        }
+
+        for table_name, sql in create_tables_sql.items():
+            logging.info(f"Creating table: {table_name}")
+            self.execute_query(sql, return_data=False)
+    
