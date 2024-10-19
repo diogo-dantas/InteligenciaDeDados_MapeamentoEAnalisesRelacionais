@@ -7,7 +7,7 @@ from typing import Tuple, Optional
 from dataclasses import dataclass
 
 
-"""Configuração do banco de dados usando decorador para simplificação na criação da classe"""
+    """Configuração do banco de dados usando decorador para simplificação na criação da classe"""
 
 @dataclass
 class DbConfig:
@@ -115,6 +115,8 @@ class DataGenerator:
 
     """Gerando dados randômicamente"""
 
+    # tabela dados_origem
+
     def gerar_dados_origem(self, num_registros: int = 100) -> pd.DataFrame:
         data_base = datetime(2023, 1, 1)
         dados_origem = []
@@ -146,6 +148,9 @@ class DataGenerator:
         self.df_origem = pd.DataFrame(dados_origem)
         return self.df_origem
 
+
+    # tabela fluxo_dados
+
     def gerar_fluxo_dados(self, num_registros: int = 200) -> pd.DataFrame:
         if self.df_origem is None:
             raise ValueError("Execute gerar_dados_origem primeiro")
@@ -176,5 +181,30 @@ class DataGenerator:
         self.df_fluxo = pd.DataFrame(fluxo_dados)
         return self.df_fluxo    
 
+     # tabela gerar_analises
+
+    def gerar_analises(self, num_registros: int = 300) -> pd.DataFrame:
+        if self.df_fluxo is None:
+            raise ValueError("Execute gerar_fluxo_dados primeiro")
+
+        analises = []
         
+        for i in range(1, num_registros + 1):
+            tipo_analise = random.choice(self.TIPOS_ANALISE)
+            fluxo_relacionado = self.df_fluxo.loc[random.choice(self.df_fluxo.index)]
+            data_analise = fluxo_relacionado['data_criacao'] + \
+                          timedelta(days=random.randint(1, 60))
+            
+            analises.append({
+                'id_analise': i,
+                'id_fluxo': fluxo_relacionado['id_fluxo'],
+                'hipoteses': f"Hipótese: {tipo_analise} - {self.fake.sentence()}",
+                'resultado': self.fake.text(max_nb_chars=200),
+                'data_analise': data_analise,
+                'responsavel': self.fake.name()
+            })
+        
+        self.df_analises = pd.DataFrame(analises)
+        return self.df_analises
+   
 
