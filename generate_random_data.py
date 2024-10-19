@@ -260,3 +260,9 @@ class DataGenerator:
 
         return self.df_origem, self.df_fluxo, self.df_analises
 
+    """ Fechando a conexão com o banco de dados """     
+
+    def close(self) -> None:
+        if self.conn is not None:
+            self.conn.close()
+            self.conn = None
