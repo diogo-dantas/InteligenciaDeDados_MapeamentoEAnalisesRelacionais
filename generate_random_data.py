@@ -20,7 +20,7 @@ class DbConfig:
 
 	class DataGenerator:
 		"""Classe para geração e manipulação de dados sintéticos"""
-		
+
 		def __init__(self, db_config: DbConfig):
 			self.db_config = db_config
 			self.fake = Faker('pt_BR')
@@ -95,3 +95,18 @@ class DbConfig:
         'Modelagem de Valor do Cliente'
         ]
 
+        """Estabelecendo conexão com o banco de dados"""
+
+        def connect(self) -> None:
+        	try:
+        		self.conn = psycopg2.connect(
+        			dbname=self.db_config.dbname,
+        			user=self.db_config.user,
+        			password=self.db_config.password,
+        			host=self.db_config.host,
+        			port=self.db_config.port
+        			)
+        	except psycopg2.Error as e:
+        		raise Exception(f"Erro ao conectar ao banco de dados: {e}")
+
+        		
