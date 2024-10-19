@@ -131,18 +131,50 @@ class DataGenerator:
                 minutes=random.randint(0, 59)
             )
 
-    sistema_base = random.choice(self.TIPOS_SISTEMAS)
+            sistema_base = random.choice(self.TIPOS_SISTEMAS)
+            dados_origem.append({
+              'id_origem': i,
+              'nome_origem': f"Sistema {sistema_base} - {self.fake.company()}",
+              'tipo_dado': random.choice(self.TIPOS_DADOS),
+              'volume': random.randint(10000, 10000000),
+              'latencia': random.choice(self.PADROES_LATENCIA),
+              'descricao': self.fake.text(max_nb_chars=200)
+              'criado_em': criado_em,
+              'atualizado_em': atualizado_em
+              })			
 
-    dados_origem.append({
-      'id_origem': i,
-      'nome_origem': f"Sistema {sistema_base} - {self.fake.company()}",
-      'tipo_dado': random.choice(self.TIPOS_DADOS),
-      'volume': random.randint(10000, 10000000),
-      'latencia': random.choice(self.PADROES_LATENCIA),
-      'descricao': self.fake.text(max_nb_chars=200)
-      'criado_em': criado_em,
-      'atualizado_em': atualizado_em
-      })			
+        self.df_origem = pd.DataFrame(dados_origem)
+        return self.df_origem
 
-    self.df_origem = pd.DataFrame(dados_origem)
-    return self.df_origem
+    def gerar_fluxo_dados(self, num_registros: int = 200) -> pd.DataFrame:
+        if self.df_origem is None:
+            raise ValueError("Execute gerar_dados_origem primeiro")
+
+        fluxo_dados = []
+
+        for i in range(1, num_registros + 1):
+            data_criacao = atualizado_em + timedelta(
+                days=random.randint(0, 30),
+                hours=random.randint(0, 23),
+                minutes=random.randint(0, 59)
+            )
+            data_atualizacao = data_criacao + timedelta(
+                days=random.randint(0, 30),
+                hours=random.randint(0, 23),
+                minutes=random.randint(0, 59)
+            )
+
+            fluxo_dados.append({
+                'id_fluxo': i,
+                'id_origem': random.choice(self.df_origem['id_origem'].values),
+                'destino': random.choice(self.DESTINOS),
+                'status': random.choice(self.STATUS),
+                'data_criacao': data_criacao,
+                'data_atualizacao': data_atualizacao
+            })
+        
+        self.df_fluxo = pd.DataFrame(fluxo_dados)
+        return self.df_fluxo    
+
+        
+
