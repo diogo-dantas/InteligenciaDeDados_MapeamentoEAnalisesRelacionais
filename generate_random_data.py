@@ -188,7 +188,7 @@ class DataGenerator:
             raise ValueError("Execute gerar_fluxo_dados primeiro")
 
         analises = []
-        
+
         for i in range(1, num_registros + 1):
             tipo_analise = random.choice(self.TIPOS_ANALISE)
             fluxo_relacionado = self.df_fluxo.loc[random.choice(self.df_fluxo.index)]
@@ -207,4 +207,56 @@ class DataGenerator:
         self.df_analises = pd.DataFrame(analises)
         return self.df_analises
    
+    """Inserindo dados no banco"""
+
+    def inserir_dados_no_banco(self) -> None:
+        if not all([self.df_origem is not None, 
+                   self.df_fluxo is not None, 
+                   self.df_analises is not None]):
+            raise ValueError("Gere todos os dados antes de inserir no banco")
+
+        if self.conn is None:
+            self.connect()
+
+        try:
+            with self.conn.cursor() as cursor:
+                for _, row in self.df_origem.iterrows():
+                    cursor.execute("""
+                        INSERT INTO DadosOrigem (id_origem, nome_origem, tipo_dado, volume, latencia, descricao,criado_em, atualizado_em)
+                        VALUES (%s, %s, %s, %s, %s, %s)
+                    """, (row['id_origem'], row['nome_origem'], row['tipo_dado'],
+                          row['volume'], row['latencia'], row['descricao'], row['criado_em'], row ['atualizado_em']))
+
+                for _, row in self.df_fluxo.iterrows():
+                    cursor.execute("""
+                        INSERT INTO FluxoDados (id_fluxo, id_origem, destino, status, data_criacao, data_atualizacao)
+                        VALUES (%s, %s, %s, %s, %s, %s)
+                    """, (row['id_fluxo'], row['id_origem'], row['destino'],
+                          row['status'], row['data_criacao'], row['data_atualizacao']))
+                          
+                for _, row in self.df_analises.iterrows():
+                    cursor.execute("""
+                        INSERT INTO Analises (id_analise, id_fluxo, hipoteses, resultado, data_analise, responsavel)
+                        VALUES (%s, %s, %s, %s, %s, %s)
+                    """, (row['id_analise'], row['id_fluxo'], row['hipoteses'],
+                          row['resultado'], row['data_analise'], row['responsavel']))
+
+            self.conn.commit()
+        except Exception as e:
+            self.conn.rollback()
+            raise Exception(f"Erro ao inserir dados: {e}")
+
+    """ Executa todo o processo de geração e inserção de dados, retorna tupla com os 3 dataframes gerados """
+
+    def gerar_e_inserir_dados(self, 
+                             num_origem: int = 100, 
+                             num_fluxo: int = 200, 
+                             num_analises: int = 300) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    
+        self.gerar_dados_origem(num_origem)
+        self.gerar_fluxo_dados(num_fluxo)
+        self.gerar_analises(num_analises)
+        self.inserir_dados_no_banco()
+
+        return self.df_origem, self.df_fluxo, self.df_analises
 
