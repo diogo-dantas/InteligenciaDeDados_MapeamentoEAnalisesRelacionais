@@ -266,3 +266,12 @@ class DataGenerator:
         if self.conn is not None:
             self.conn.close()
             self.conn = None
+
+    def __enter__(self):
+        """Permite uso do context manager (with)"""
+        self.connect()
+        return self
+        
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Fecha conexão ao sair do context manager"""
+        self.close()
