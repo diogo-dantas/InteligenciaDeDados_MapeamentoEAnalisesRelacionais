@@ -97,9 +97,7 @@ class PostgresConnector:
                 tipo_dado VARCHAR(100) NOT NULL,
                 volume INTEGER,
                 latencia VARCHAR(50),
-                descricao TEXT,
-                criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                descricao TEXT
             );
             """,
             

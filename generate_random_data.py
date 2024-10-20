@@ -125,17 +125,6 @@ class DataGenerator:
         dados_origem = []
 
         for i in range(1, num_registros + 1):
-            criado_em = data_base + timedelta(
-                days=random.randint(0, 365),
-                hours=random.randint(0, 23),
-                minutes=random.randint(0, 59)
-                )
-            atualizado_em = criado_em + timedelta(
-                days=random.randint(1, 30),
-                hours=random.randint(0, 23),
-                minutes=random.randint(0, 59)
-                )
-
             sistema_base = random.choice(self.TIPOS_SISTEMAS)
             dados_origem.append({
               'id_origem': i,
@@ -143,9 +132,7 @@ class DataGenerator:
               'tipo_dado': random.choice(self.TIPOS_DADOS),
               'volume': random.randint(10000, 10000000),
               'latencia': random.choice(self.PADROES_LATENCIA),
-              'descricao': self.fake.text(max_nb_chars=200),
-              'criado_em': criado_em,
-              'atualizado_em': atualizado_em
+              'descricao': self.fake.text(max_nb_chars=200)
               })			
 
         self.df_origem = pd.DataFrame(dados_origem)
@@ -228,7 +215,7 @@ class DataGenerator:
                             INSERT INTO DadosOrigem (id_origem, nome_origem, tipo_dado, volume, latencia, descricao,criado_em, atualizado_em)
                             VALUES (%s, %s, %s, %s, %s, %s)
                             """, (row['id_origem'], row['nome_origem'], row['tipo_dado'],
-                              row['volume'], row['latencia'], row['descricao'], row['criado_em'], row ['atualizado_em']))
+                              row['volume'], row['latencia'], row['descricao']))
 
                     for _, row in self.df_fluxo.iterrows():
                         cursor.execute("""
