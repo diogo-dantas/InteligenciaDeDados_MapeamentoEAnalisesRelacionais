@@ -200,42 +200,51 @@ class DataGenerator:
     """Inserindo dados no banco"""
 
     def inserir_dados_no_banco(self) -> None:
-        if not all([self.df_origem is not None, 
-                   self.df_fluxo is not None, 
-                   self.df_analises is not None]):
-            raise ValueError("Gere todos os dados antes de inserir no banco")
-
-        if self.conn is None:
-            self.connect()
-
-            try:
-                with self.conn.cursor() as cursor:
-                    for _, row in self.df_origem.iterrows():
-                        cursor.execute("""
-                            INSERT INTO DadosOrigem (id_origem, nome_origem, tipo_dado, volume, latencia, descricao,criado_em, atualizado_em)
-                            VALUES (%s, %s, %s, %s, %s, %s)
-                            """, (row['id_origem'], row['nome_origem'], row['tipo_dado'],
-                              row['volume'], row['latencia'], row['descricao']))
-
-                    for _, row in self.df_fluxo.iterrows():
-                        cursor.execute("""
-                            INSERT INTO FluxoDados (id_fluxo, id_origem, destino, status, data_criacao, data_atualizacao)
-                            VALUES (%s, %s, %s, %s, %s, %s)
-                            """, (row['id_fluxo'], row['id_origem'], row['destino'],
-                              row['status'], row['data_criacao'], row['data_atualizacao']))
-
-                    for _, row in self.df_analises.iterrows():
-                        cursor.execute("""
-                            INSERT INTO Analises (id_analise, id_fluxo, hipoteses, resultado, data_analise, responsavel)
-                            VALUES (%s, %s, %s, %s, %s, %s)
-                            """, (row['id_analise'], row['id_fluxo'], row['hipoteses'],
-                              row['resultado'], row['data_analise'], row['responsavel']))
-
-                self.conn.commit()
-            except Exception as e:
-                self.conn.rollback()
-                raise Exception(f"Erro ao inserir dados: {e}")
-
+       if not all([self.df_origem is not None, 
+                  self.df_fluxo is not None, 
+                  self.df_analises is not None]):
+               raise ValueError("Gere todos os dados antes de inserir no banco")
+       
+       if self.conn is None or self.conn.closed:
+               self.connect()
+               
+       try:
+               with self.conn.cursor() as cursor:
+                       # Inserção em lote dados_origem
+                       dados_origem = [tuple(x) for x in self.df_origem.values]
+                       cursor.executemany("""
+                               INSERT INTO dados_origem 
+                                       (id_origem, nome_origem, tipo_dado, volume, latencia, 
+                                        descricao)
+                               VALUES (%s, %s, %s, %s, %s, %s)
+                               """, dados_origem)
+                       
+                       # Inserção em lote fluxo_dados
+                       dados_fluxo = [tuple(x) for x in self.df_fluxo.values]
+                       cursor.executemany("""
+                               INSERT INTO fluxo_dados 
+                                       (id_fluxo, id_origem, destino, status, 
+                                        data_criacao, data_atualizacao)
+                               VALUES (%s, %s, %s, %s, %s, %s)
+                               """, dados_fluxo)
+                       
+                       # Inserção em lote analises
+                       dados_analises = [tuple(x) for x in self.df_analises.values]
+                       cursor.executemany("""
+                               INSERT INTO analises 
+                                       (id_analise, id_fluxo, hipoteses, resultado, 
+                                        data_analise, responsavel)
+                               VALUES (%s, %s, %s, %s, %s, %s)
+                               """, dados_analises)
+                       
+                       self.conn.commit()
+                       
+       except Exception as e:
+               self.conn.rollback()
+               raise Exception(f"Erro ao inserir dados: {e}")
+       finally:
+               cursor.close()
+        
     """ Executa todo o processo de geração e inserção de dados, retorna tupla com os 3 dataframes gerados """
 
     def gerar_e_inserir_dados(self, 
