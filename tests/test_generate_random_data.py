@@ -6,11 +6,12 @@ from generate_random_data import DbConfig, DataGenerator
 
 def test_db_config_initialization():
     config = DbConfig()
-    assert isinstance(config.host, str)
-    assert isinstance(config.port, (int, str))
     assert isinstance(config.dbname, str)
     assert isinstance(config.user, str)
     assert isinstance(config.password, str)
+    assert isinstance(config.host, str)
+    assert isinstance(config.port, str)
+        
 
 def test_data_generator_initialization():
     generator = DataGenerator()
