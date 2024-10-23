@@ -5,28 +5,24 @@ import psycopg2
 from psycopg2 import Error
 import os
 from datetime import datetime
+from dotenv import load_dotenv
 import logging
 from typing import Dict
+from postgres_setup import PostgresConnector
+
+load_dotenv()
 
 class TestPostgresConnector(unittest.TestCase):
     
     def setUp(self):
         """Configuração inicial para cada teste"""
         self.test_credentials = {
-            'dbname': 'test_db',
-            'user': 'test_user',
-            'password': 'test_pass',
+            'dbname': 'smart_data_db',
+            'user': os.getenv('DB_USER'),
+            'password': os.getenv('DB_PASSWORD'),
             'host': 'localhost',
             'port': '5432'
         }
-        # Usar credenciais de ambiente para CI/CD
-        if os.getenv('CI'):
-            self.test_credentials.update({
-                'host': os.getenv('POSTGRES_HOST', 'localhost'),
-                'user': os.getenv('POSTGRES_USER', 'test_user'),
-                'password': os.getenv('POSTGRES_PASSWORD', 'test_pass'),
-                'dbname': os.getenv('POSTGRES_DB', 'test_db')
-            })
         
         self.connector = PostgresConnector(**self.test_credentials)
 

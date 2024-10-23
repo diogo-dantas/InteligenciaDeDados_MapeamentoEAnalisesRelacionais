@@ -1,311 +1,207 @@
 import pytest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 from datetime import datetime
 import pandas as pd
 from generate_random_data import DbConfig, DataGenerator
 from dotenv import load_dotenv
 import os
 
+# Carrega variáveis de ambiente
 load_dotenv()
 
-def test_db_config_initialization():
-    
-    dbname = "smart_data_db"
-    user = os.getenv('DB_USER')
-    password = os.getenv('DB_PASSWORD')
-    host = "localhost"
-    port = '5432'
-
-    config = DbConfig(dbname=dbname, user=user, password=password, host=host, port=port)
-
-    assert isinstance(config.dbname, str)
-    assert isinstance(config.user, str)
-    assert isinstance(config.password, str)
-    assert isinstance(config.host, str)
-    assert isinstance(config.port, str)
-        
-
-def test_data_generator_initialization():
-    generator = DataGenerator()
-    assert hasattr(generator, 'gerar_dados_origem')
-    assert hasattr(generator, 'gerar_fluxo_dados')
-    assert hasattr(generator, 'gerar_analises')
-    assert hasattr(generator, 'inserir_dados_no_banco')
-    assert hasattr(generator, 'gerar_e_inserir_dados')
-
-def test_gerar_dados_origem():
-    generator = DataGenerator()
-    num_registros = 100
-    origem_df = generator.gerar_dados_origem(num_registros)
-    
-    assert isinstance(origem_df, pd.DataFrame)
-    assert len(origem_df) == num_registros
-    assert  'id_origem' in origem_df.columns
-    assert 'nome_origem' in origem_df.columns
-    assert 'tipo_dado' in origem_df.columns
-    assert 'volume' in origem_df.columns
-    assert 'latencia' in origem_df.columns
-    assert 'descricao' in origem_df.columns
-    
-def test_gerar_fluxo_dados():
-    generator = DataGenerator()
-    num_registros = 200
-    fluxo_df = generator.gerar_fluxo_dados(num_registros)
-    
-    assert isinstance(fluxo_df, pd.DataFrame)
-    assert len(fluxo_df) == num_registros
-    assert 'id_fluxo' in fluxo_df.columns
-    assert 'id_origem' in fluxo_df.columns
-    assert 'destino' in fluxo_df.columns
-    assert 'status' in fluxo_df.columns
-    assert 'data_criacao' in fluxo_df.columns
-    assert 'data_atualizacao' in fluxo_df.columns
-    
-    assert fluxo_df['id_origem'].isin(id_origem).all()
-    assert (fluxo_df['data_atualizacao'] > fluxo_df['data_criacao'] ).all()
-    assert isinstance(fluxo_df['data_atualizacao'].iloc[0], datetime)
-    assert isinstance(fluxo_df['data_criacao'].iloc[0], datetime)
-
-def test_gerar_analises():
-    generator = DataGenerator()
-    num_registros = 300
-    
-    analise_df= generator.gerar_analises(num_registros)
-    
-    assert isinstance(analise_df, pd.DataFrame)
-    assert len(analise_df) == num_registros
-    assert 'id_analise' in analise_df.columns
-    assert 'id_fluxo' in analise_df.columns
-    assert 'hipoteses' in analise_df.columns
-    assert 'resultado' in analise_df.columns
-    assert 'data_analise' in analise_df.columns
-    assert 'responsavel' in analise_df.columns
-    
-    # Verify data types and constraints
-    assert analise_df['id_fluxo'].isin(id_fluxo).all()
+# Fixtures compartilhadas
+@pytest.fixture
+def db_config():
+    return DbConfig(
+        dbname="smart_data_db",
+        user=os.getenv('DB_USER'),
+        password=os.getenv('DB_PASSWORD'),
+        host="localhost",
+        port='5432'
+    )
 
 @pytest.fixture
-def test_inserir_dados_no_banco(self):
-    """
-    Testa diferentes cenários para o método inserir_dados_no_banco()
-    """
-    # Cenário 1: Teste quando os DataFrames não foram gerados
-    def test_dataframes_nao_gerados():
-        self.df_origem = None
-        self.df_fluxo = None
-        self.df_analises = None
-        
-        with self.assertRaises(ValueError) as context:
-            self.inserir_dados_no_banco()
-        self.assertTrue("Gere todos os dados antes de inserir no banco" in str(context.exception))
+def data_generator(db_config):
+    return DataGenerator(db_config)
+
+@pytest.fixture
+def mock_dataframes():
+    df_origem = pd.DataFrame({
+        'id_origem': [1],
+        'nome_origem': ['Teste'],
+        'tipo_dado': ['CSV'],
+        'volume': [1000],
+        'latencia': ['1h'],
+        'descricao': ['Teste']
+    })
     
-    # Cenário 2: Teste de inserção bem sucedida
-    def test_insercao_sucesso():
-        # Prepara os dados de teste
-        self.df_origem = pd.DataFrame({
-            'id_origem': [1],
-            'nome_origem': ['Teste'],
-            'tipo_dado': ['CSV'],
-            'volume': [1000],
-            'latencia': ['1h'],
-            'descricao': ['Teste']
-        })
+    df_fluxo = pd.DataFrame({
+        'id_fluxo': [1],
+        'id_origem': [1],
+        'destino': ['DW'],
+        'status': ['Ativo'],
+        'data_criacao': [datetime.now()],
+        'data_atualizacao': [datetime.now()]
+    })
+    
+    df_analises = pd.DataFrame({
+        'id_analise': [1],
+        'id_fluxo': [1],
+        'hipoteses': ['Teste'],
+        'resultado': ['OK'],
+        'data_analise': [datetime.now()],
+        'responsavel': ['Teste']
+    })
+    
+    return df_origem, df_fluxo, df_analises
+
+# Testes de inicialização
+class TestInitialization:
+    def test_db_config_initialization(self, db_config):
+        assert isinstance(db_config.dbname, str)
+        assert isinstance(db_config.user, str)
+        assert isinstance(db_config.password, str)
+        assert isinstance(db_config.host, str)
+        assert isinstance(db_config.port, str)
+
+    def test_data_generator_initialization(self, data_generator):
+        assert hasattr(data_generator, 'gerar_dados_origem')
+        assert hasattr(data_generator, 'gerar_fluxo_dados')
+        assert hasattr(data_generator, 'gerar_analises')
+        assert hasattr(data_generator, 'inserir_dados_no_banco')
+        assert hasattr(data_generator, 'gerar_e_inserir_dados')
+
+# Testes de geração de dados
+class TestDataGeneration:
+    def test_gerar_dados_origem(self, data_generator):
+        num_registros = 100
+        origem_df = data_generator.gerar_dados_origem(num_registros)
         
-        self.df_fluxo = pd.DataFrame({
-            'id_fluxo': [1],
-            'id_origem': [1],
-            'destino': ['DW'],
-            'status': ['Ativo'],
-            'data_criacao': [datetime.now()],
-            'data_atualizacao': [datetime.now()]
-        })
+        assert isinstance(origem_df, pd.DataFrame)
+        assert len(origem_df) == num_registros
+        assert all(col in origem_df.columns for col in [
+            'id_origem', 'nome_origem', 'tipo_dado', 
+            'volume', 'latencia', 'descricao'
+        ])
+
+    def test_gerar_fluxo_dados(self, data_generator):
+        num_registros = 200
+        data_generator.gerar_dados_origem(100)  # Pré-requisito
+        fluxo_df = data_generator.gerar_fluxo_dados(num_registros)
         
-        self.df_analises = pd.DataFrame({
-            'id_analise': [1],
-            'id_fluxo': [1],
-            'hipoteses': ['Teste'],
-            'resultado': ['OK'],
-            'data_analise': [datetime.now()],
-            'responsavel': ['Teste']
-        })
+        assert isinstance(fluxo_df, pd.DataFrame)
+        assert len(fluxo_df) == num_registros
+        assert all(col in fluxo_df.columns for col in [
+            'id_fluxo', 'id_origem', 'destino', 'status', 
+            'data_criacao', 'data_atualizacao'
+        ])
         
-        # Mock da conexão e cursor
-        mock_conn = MagicMock()
+        # Validações específicas
+        assert fluxo_df['id_origem'].isin(data_generator.df_origem['id_origem']).all()
+        assert (fluxo_df['data_atualizacao'] > fluxo_df['data_criacao']).all()
+        assert all(isinstance(dt, datetime) for dt in fluxo_df['data_criacao'])
+        assert all(isinstance(dt, datetime) for dt in fluxo_df['data_atualizacao'])
+
+    def test_gerar_analises(self, data_generator):
+        num_registros = 300
+        data_generator.gerar_dados_origem(100)  # Pré-requisitos
+        data_generator.gerar_fluxo_dados(200)
+        
+        analise_df = data_generator.gerar_analises(num_registros)
+        
+        assert isinstance(analise_df, pd.DataFrame)
+        assert len(analise_df) == num_registros
+        assert all(col in analise_df.columns for col in [
+            'id_analise', 'id_fluxo', 'hipoteses', 
+            'resultado', 'data_analise', 'responsavel'
+        ])
+        assert analise_df['id_fluxo'].isin(data_generator.df_fluxo['id_fluxo']).all()
+
+# Testes de inserção no banco
+class TestDatabaseOperations:
+    def test_inserir_dados_sem_dataframes(self, data_generator):
+        with pytest.raises(ValueError) as exc_info:
+            data_generator.inserir_dados_no_banco()
+        assert "Gere todos os dados antes de inserir no banco" in str(exc_info.value)
+
+    @patch('psycopg2.connect')
+    def test_inserir_dados_sucesso(self, mock_connect, data_generator, mock_dataframes):
+        df_origem, df_fluxo, df_analises = mock_dataframes
+        data_generator.df_origem = df_origem
+        data_generator.df_fluxo = df_fluxo
+        data_generator.df_analises = df_analises
+
         mock_cursor = MagicMock()
-        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
-        self.conn = mock_conn
+        mock_connect.return_value.cursor.return_value.__enter__.return_value = mock_cursor
         
-        # Executa o método
-        self.inserir_dados_no_banco()
+        data_generator.inserir_dados_no_banco()
         
-        # Verifica se os métodos esperados foram chamados
-        self.assertEqual(mock_cursor.executemany.call_count, 3)
-        mock_conn.commit.assert_called_once()
-    
-    # Cenário 3: Teste de erro na inserção
-    def test_erro_insercao():
-        # Prepara os dados
-        self.df_origem = pd.DataFrame({'id_origem': [1]})  # DataFrame mínimo para teste
-        self.df_fluxo = pd.DataFrame({'id_fluxo': [1]})
-        self.df_analises = pd.DataFrame({'id_analise': [1]})
-        
-        # Mock da conexão com erro
-        mock_conn = MagicMock()
+        assert mock_cursor.executemany.call_count == 3
+        mock_connect.return_value.commit.assert_called_once()
+
+    @patch('psycopg2.connect')
+    def test_inserir_dados_erro(self, mock_connect, data_generator, mock_dataframes):
+        df_origem, df_fluxo, df_analises = mock_dataframes
+        data_generator.df_origem = df_origem
+        data_generator.df_fluxo = df_fluxo
+        data_generator.df_analises = df_analises
+
         mock_cursor = MagicMock()
         mock_cursor.executemany.side_effect = Exception("Erro de teste")
-        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
-        self.conn = mock_conn
+        mock_connect.return_value.cursor.return_value.__enter__.return_value = mock_cursor
         
-        # Verifica se a exceção é lançada
-        with self.assertRaises(Exception) as context:
-            self.inserir_dados_no_banco()
+        with pytest.raises(Exception) as exc_info:
+            data_generator.inserir_dados_no_banco()
         
-        # Verifica se o rollback foi chamado
-        mock_conn.rollback.assert_called_once()
-    
-    # Cenário 4: Teste de reconexão quando conexão está fechada
-    def test_reconexao():
-        self.df_origem = pd.DataFrame({'id_origem': [1]})
-        self.df_fluxo = pd.DataFrame({'id_fluxo': [1]})
-        self.df_analises = pd.DataFrame({'id_analise': [1]})
-        
-        # Simula conexão fechada
-        self.conn = None
-        
-        # Mock do método connect
-        original_connect = self.connect
-        connect_called = False
-        
-        def mock_connect():
-            nonlocal connect_called
-            connect_called = True
-            self.conn = MagicMock()
-            return self.conn
-        
-        self.connect = mock_connect
-        
-        try:
-            self.inserir_dados_no_banco()
-            self.assertTrue(connect_called)
-        finally:
-            # Restaura o método original
-            self.connect = original_connect
+        assert "Erro ao inserir dados" in str(exc_info.value)
+        mock_connect.return_value.rollback.assert_called_once()
 
-    # Executa todos os testes
-    test_dataframes_nao_gerados()
-    test_insercao_sucesso()
-    test_erro_insercao()
-    test_reconexao()
+# Testes de geração e inserção integrados
+class TestIntegration:
+    def test_gerar_e_inserir_dados_padrao(self, data_generator):
+        with patch.object(data_generator, 'inserir_dados_no_banco') as mock_insert:
+            df_origem, df_fluxo, df_analises = data_generator.gerar_e_inserir_dados()
+            
+            assert isinstance(df_origem, pd.DataFrame)
+            assert isinstance(df_fluxo, pd.DataFrame)
+            assert isinstance(df_analises, pd.DataFrame)
+            assert len(df_origem) == 100
+            assert len(df_fluxo) == 200
+            assert len(df_analises) == 300
+            mock_insert.assert_called_once()
 
-@pytest.fixture
-def test_gerar_e_inserir_dados(self):
-    """
-    Testa diferentes cenários para o método gerar_e_inserir_dados()
-    """
-    def test_geracao_padrao():
-        # Mock dos métodos de geração e inserção
-        self.gerar_dados_origem = MagicMock()
-        self.gerar_fluxo_dados = MagicMock()
-        self.gerar_analises = MagicMock()
-        self.inserir_dados_no_banco = MagicMock()
-        
-        # Cria DataFrames de teste
-        self.df_origem = pd.DataFrame({'test': [1]})
-        self.df_fluxo = pd.DataFrame({'test': [1]})
-        self.df_analises = pd.DataFrame({'test': [1]})
-        
-        # Executa o método
-        df_origem, df_fluxo, df_analises = self.gerar_e_inserir_dados()
-        
-        # Verifica se os métodos foram chamados com os valores padrão
-        self.gerar_dados_origem.assert_called_once_with(100)
-        self.gerar_fluxo_dados.assert_called_once_with(200)
-        self.gerar_analises.assert_called_once_with(300)
-        self.inserir_dados_no_banco.assert_called_once()
-        
-        # Verifica se os DataFrames foram retornados corretamente
-        self.assertIs(df_origem, self.df_origem)
-        self.assertIs(df_fluxo, self.df_fluxo)
-        self.assertIs(df_analises, self.df_analises)
-    
-    def test_geracao_parametros_customizados():
-        # Mock dos métodos
-        self.gerar_dados_origem = MagicMock()
-        self.gerar_fluxo_dados = MagicMock()
-        self.gerar_analises = MagicMock()
-        self.inserir_dados_no_banco = MagicMock()
-        
-        # Executa com parâmetros customizados
-        self.gerar_e_inserir_dados(num_origem=10, num_fluxo=20, num_analises=30)
-        
-        # Verifica se os métodos foram chamados com os valores corretos
-        self.gerar_dados_origem.assert_called_once_with(10)
-        self.gerar_fluxo_dados.assert_called_once_with(20)
-        self.gerar_analises.assert_called_once_with(30)
-    
-    def test_erro_na_geracao():
-        # Mock com erro
-        self.gerar_dados_origem = MagicMock(side_effect=Exception("Erro teste"))
-        
-        # Verifica se a exceção é propagada
-        with self.assertRaises(Exception) as context:
-            self.gerar_e_inserir_dados()
-        
-        # Verifica se a mensagem de erro está correta
-        self.assertEqual(str(context.exception), "Erro teste")
-        
-        # Verifica se os outros métodos não foram chamados
-        self.assertFalse(hasattr(self, 'df_origem'))
-    
-    # Executa todos os testes de geração
-    test_geracao_padrao()
-    test_geracao_parametros_customizados()
-    test_erro_na_geracao()
+    def test_gerar_e_inserir_dados_customizado(self, data_generator):
+        with patch.object(data_generator, 'inserir_dados_no_banco') as mock_insert:
+            df_origem, df_fluxo, df_analises = data_generator.gerar_e_inserir_dados(
+                num_origem=10,
+                num_fluxo=20,
+                num_analises=30
+            )
+            
+            assert len(df_origem) == 10
+            assert len(df_fluxo) == 20
+            assert len(df_analises) == 30
+            mock_insert.assert_called_once()
 
-def test_close(self):
-    """
-    Testa diferentes cenários para o método close()
-    """
-    def test_fechamento_conexao_ativa():
-        # Cria mock da conexão
+# Testes de gerenciamento de conexão
+class TestConnectionManagement:
+    def test_close_conexao_ativa(self, data_generator):
         mock_conn = MagicMock()
-        self.conn = mock_conn
+        data_generator.conn = mock_conn
         
-        # Executa o método
-        self.close()
+        data_generator.close()
         
-        # Verifica se o método close foi chamado
         mock_conn.close.assert_called_once()
-        # Verifica se a conexão foi definida como None
-        self.assertIsNone(self.conn)
-    
-    def test_fechamento_sem_conexao():
-        # Define conexão como None
-        self.conn = None
-        
-        # Executa o método (não deve gerar erro)
-        self.close()
-        
-        # Verifica se a conexão continua None
-        self.assertIsNone(self.conn)
-    
-    def test_erro_ao_fechar():
-        # Cria mock da conexão que gera erro ao fechar
-        mock_conn = MagicMock()
-        mock_conn.close.side_effect = Exception("Erro ao fechar conexão")
-        self.conn = mock_conn
-        
-        # Verifica se a exceção é propagada
-        with self.assertRaises(Exception) as context:
-            self.close()
-        
-        # Verifica se a mensagem de erro está correta
-        self.assertEqual(str(context.exception), "Erro ao fechar conexão")
-        
-        # Verifica se a conexão não foi definida como None em caso de erro
-        self.assertIs(self.conn, mock_conn)
-    
-    # Executa todos os testes de fechamento
-    test_fechamento_conexao_ativa()
-    test_fechamento_sem_conexao()
-    test_erro_ao_fechar()    
+        assert data_generator.conn is None
+
+    def test_close_sem_conexao(self, data_generator):
+        data_generator.conn = None
+        data_generator.close()  # Não deve gerar erro
+        assert data_generator.conn is None
+
+    def test_context_manager(self, data_generator):
+        with patch.object(data_generator, 'connect') as mock_connect:
+            with patch.object(data_generator, 'close') as mock_close:
+                with data_generator:
+                    mock_connect.assert_called_once()
+                mock_close.assert_called_once()
