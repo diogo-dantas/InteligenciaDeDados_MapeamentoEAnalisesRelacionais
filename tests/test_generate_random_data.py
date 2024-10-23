@@ -3,9 +3,21 @@ from unittest.mock import MagicMock
 from datetime import datetime
 import pandas as pd
 from generate_random_data import DbConfig, DataGenerator
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 def test_db_config_initialization():
-    config = DbConfig()
+    
+    dbname = "smart_data_db"
+    user = os.getenv('DB_USER')
+    password = os.getenv('DB_PASSWORD')
+    host = "localhost"
+    port = '5432'
+
+    config = DbConfig(dbname=dbname, user=user, password=password, host=host, port=port)
+
     assert isinstance(config.dbname, str)
     assert isinstance(config.user, str)
     assert isinstance(config.password, str)
@@ -72,6 +84,7 @@ def test_gerar_analises():
     # Verify data types and constraints
     assert analise_df['id_fluxo'].isin(id_fluxo).all()
 
+@pytest.fixture
 def test_inserir_dados_no_banco(self):
     """
     Testa diferentes cenários para o método inserir_dados_no_banco()
@@ -184,6 +197,7 @@ def test_inserir_dados_no_banco(self):
     test_erro_insercao()
     test_reconexao()
 
+@pytest.fixture
 def test_gerar_e_inserir_dados(self):
     """
     Testa diferentes cenários para o método gerar_e_inserir_dados()
