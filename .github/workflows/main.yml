@@ -3,10 +3,10 @@ name: Python Database CI
 on:
   push:
     branches-ignore:
-      - master
+      - main
   pull_request:
     branches:
-      - master
+      - main
 
 jobs:
   test-and-merge:
@@ -70,12 +70,12 @@ jobs:
         git config --global user.name 'github-actions'
         git config --global user.email 'github-actions@github.com'
     
-    - name: Auto merge to master
+    - name: Auto merge to main
       if: success()
       run: |
-        git fetch origin master:master
-        git checkout master
+        git fetch origin main:main
+        git checkout main
         git merge ${{ github.ref }} --no-ff -m "Auto-merge branch ${{ github.ref }}"
-        git push origin master
+        git push origin main
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
