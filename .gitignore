@@ -1,0 +1,113 @@
+# Ambiente Virtual Python
+venv/
+env/
+.env/
+.venv/
+ENV/
+my_env/
+
+# Arquivos Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+profile_default/
+ipython_config.py
+
+# Banco de dados
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+*.sqlite-journal
+
+# Arquivos de log
+*.log
+logs/
+log/
+
+# Arquivos de ambiente e configuração
+.env
+.env.local
+.env.*.local
+config.ini
+*.cfg
+settings.json
+
+# Arquivos de sistema
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDEs e Editores
+.idea/
+.vscode/
+*.sublime-workspace
+*.sublime-project
+.project
+.pydevproject
+.settings/
+.classpath
+
+# Arquivos de dados e output
+data/*.csv
+data/*.xlsx
+data/*.json
+output/
+results/
+*.pkl
+*.h5
+*.parquet
+
+# Arquivos de segurança e credenciais
+*.pem
+*.key
+*.cert
+credentials/
+secrets/
+
+# Arquivos de cache
+.cache/
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# Arquivos de documentação gerados
+docs/_build/
+site/
+
+# Arquivos temporários
+tmp/
+temp/
