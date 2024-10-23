@@ -9,6 +9,7 @@ import os
 
 
 class PostgresConnector:
+
     def __init__(
         self,
         dbname: str,
@@ -17,6 +18,14 @@ class PostgresConnector:
         host: str = 'localhost',
         port: str = '5432'
     ):
+
+        # Validação de None
+        if any(param is None for param in [dbname, user, password]):
+            raise TypeError("Credenciais do banco não podem ser None")
+        
+        # Validação de tipo string
+        if not all(isinstance(param, str) for param in [dbname, user, password, host, port]):
+            raise TypeError("Credenciais do banco devem ser strings")
         
         """ Inicializa o conector com PostgreSQL """
 
