@@ -118,46 +118,70 @@ class DataGenerator:
 
     """Gerando dados randômicamente"""
 
+    def get_ultimo_id(self, tabela: str, coluna: str) -> int:
+        if self.conn is None or self.conn.closed:
+            self.connect()
+        try:
+            with self.conn.cursor() as cursor:
+                cursor.execute(f"SELECT COALESCE(MAX({coluna}), 0) FROM {tabela}")
+                return cursor.fetchone()[0]
+        except Exception as e:
+            return 0 
+
     # tabela dados_origem
 
     def gerar_dados_origem(self, num_registros: int = 100) -> pd.DataFrame:
+        # Garantir que há conexão
+        if self.conn is None or self.conn.closed:
+            self.connect()
+            
+        # Obter último ID
+        ultimo_id = self.get_ultimo_id('dados_origem', 'id_origem')
+            
         data_base = datetime(2023, 1, 1)
         dados_origem = []
 
-        for i in range(1, num_registros + 1):
+        # Começar a partir do último ID + 1
+        for i in range(ultimo_id + 1, ultimo_id + num_registros + 1):
             sistema_base = random.choice(self.TIPOS_SISTEMAS)
             dados_origem.append({
-              'id_origem': i,
-              'nome_origem': f"Sistema {sistema_base} - {self.fake.company()}",
-              'tipo_dado': random.choice(self.TIPOS_DADOS),
-              'volume': random.randint(10000, 10000000),
-              'latencia': random.choice(self.PADROES_LATENCIA),
-              'descricao': self.fake.text(max_nb_chars=200)
-              })			
+                'id_origem': i,
+                'nome_origem': f"Sistema {sistema_base} - {self.fake.company()}",
+                'tipo_dado': random.choice(self.TIPOS_DADOS),
+                'volume': random.randint(10000, 10000000),
+                'latencia': random.choice(self.PADROES_LATENCIA),
+                'descricao': self.fake.text(max_nb_chars=200)
+            })           
 
         self.df_origem = pd.DataFrame(dados_origem)
         return self.df_origem
-
-    # tabela fluxo_dados
 
     def gerar_fluxo_dados(self, num_registros: int = 200) -> pd.DataFrame:
         if self.df_origem is None:
             raise ValueError("Execute gerar_dados_origem primeiro")
 
+        # Garantir que há conexão
+        if self.conn is None or self.conn.closed:
+            self.connect()
+
+        # Obter último ID
+        ultimo_id = self.get_ultimo_id('fluxo_dados', 'id_fluxo')
+
         data_base = datetime(2023, 1, 1)    
         fluxo_dados = []
 
-        for i in range(1, num_registros + 1):
+        # Começar a partir do último ID + 1
+        for i in range(ultimo_id + 1, ultimo_id + num_registros + 1):
             data_criacao = data_base + timedelta(
                 days=random.randint(0, 30),
                 hours=random.randint(0, 23),
                 minutes=random.randint(0, 59)
-                )
+            )
             data_atualizacao = data_criacao + timedelta(
                 days=random.randint(0, 30),
                 hours=random.randint(0, 23),
                 minutes=random.randint(0, 59)
-                )
+            )
 
             fluxo_dados.append({
                 'id_fluxo': i,
@@ -166,20 +190,26 @@ class DataGenerator:
                 'status': random.choice(self.STATUS),
                 'data_criacao': data_criacao,
                 'data_atualizacao': data_atualizacao
-                })
+            })
 
         self.df_fluxo = pd.DataFrame(fluxo_dados)
         return self.df_fluxo    
-
-    # tabela gerar_analises
 
     def gerar_analises(self, num_registros: int = 300) -> pd.DataFrame:
         if self.df_fluxo is None:
             raise ValueError("Execute gerar_fluxo_dados primeiro")
 
+        # Garantir que há conexão
+        if self.conn is None or self.conn.closed:
+            self.connect()
+
+        # Obter último ID
+        ultimo_id = self.get_ultimo_id('analises', 'id_analise')
+
         analises = []
 
-        for i in range(1, num_registros + 1):
+        # Começar a partir do último ID + 1
+        for i in range(ultimo_id + 1, ultimo_id + num_registros + 1):
             tipo_analise = random.choice(self.TIPOS_ANALISE)
             fluxo_relacionado = self.df_fluxo.loc[random.choice(self.df_fluxo.index)]
             data_analise = fluxo_relacionado['data_criacao'] + \
@@ -192,10 +222,25 @@ class DataGenerator:
                 'resultado': self.fake.text(max_nb_chars=200),
                 'data_analise': data_analise,
                 'responsavel': self.fake.name()
-                })
+            })
 
         self.df_analises = pd.DataFrame(analises)
         return self.df_analises
+
+    def gerar_e_inserir_dados(self, 
+        num_origem: int = 100, 
+        num_fluxo: int = 200, 
+        num_analises: int = 300) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+        
+        # Garantir que há conexão antes de começar
+        if self.conn is None or self.conn.closed:
+            self.connect()
+
+        self.gerar_dados_origem(num_origem)
+        self.gerar_fluxo_dados(num_fluxo)
+        self.gerar_analises(num_analises)
+        self.inserir_dados_no_banco()
+        return self.df_origem, self.df_fluxo, self.df_analises
 
     """Inserindo dados no banco"""
 
@@ -209,35 +254,35 @@ class DataGenerator:
                self.connect()
                
        try:
-               with self.conn.cursor() as cursor:
-                       # Inserção em lote dados_origem
-                       dados_origem = [tuple(x) for x in self.df_origem.values]
-                       cursor.executemany("""
-                               INSERT INTO dados_origem 
-                                       (id_origem, nome_origem, tipo_dado, volume, latencia, 
-                                        descricao)
-                               VALUES (%s, %s, %s, %s, %s, %s)
-                               """, dados_origem)
-                       
-                       # Inserção em lote fluxo_dados
-                       dados_fluxo = [tuple(x) for x in self.df_fluxo.values]
-                       cursor.executemany("""
-                               INSERT INTO fluxo_dados 
-                                       (id_fluxo, id_origem, destino, status, 
-                                        data_criacao, data_atualizacao)
-                               VALUES (%s, %s, %s, %s, %s, %s)
-                               """, dados_fluxo)
-                       
-                       # Inserção em lote analises
-                       dados_analises = [tuple(x) for x in self.df_analises.values]
-                       cursor.executemany("""
-                               INSERT INTO analises 
-                                       (id_analise, id_fluxo, hipoteses, resultado, 
-                                        data_analise, responsavel)
-                               VALUES (%s, %s, %s, %s, %s, %s)
-                               """, dados_analises)
-                       
-                       self.conn.commit()
+           with self.conn.cursor() as cursor:
+               # Inserção em lote dados_origem
+               dados_origem = [tuple(x) for x in self.df_origem.values]
+               cursor.executemany("""
+                       INSERT INTO dados_origem 
+                               (id_origem, nome_origem, tipo_dado, volume, latencia, 
+                                descricao)
+                       VALUES (%s, %s, %s, %s, %s, %s)
+                       """, dados_origem)
+               
+               # Inserção em lote fluxo_dados
+               dados_fluxo = [tuple(x) for x in self.df_fluxo.values]
+               cursor.executemany("""
+                       INSERT INTO fluxo_dados 
+                               (id_fluxo, id_origem, destino, status, 
+                                data_criacao, data_atualizacao)
+                       VALUES (%s, %s, %s, %s, %s, %s)
+                       """, dados_fluxo)
+               
+               # Inserção em lote analises
+               dados_analises = [tuple(x) for x in self.df_analises.values]
+               cursor.executemany("""
+                       INSERT INTO analises 
+                               (id_analise, id_fluxo, hipoteses, resultado, 
+                                data_analise, responsavel)
+                       VALUES (%s, %s, %s, %s, %s, %s)
+                       """, dados_analises)
+               
+               self.conn.commit()
                        
        except Exception as e:
                self.conn.rollback()
