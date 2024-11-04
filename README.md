@@ -139,10 +139,6 @@ cp .env.example .env
 nano .env
 ```
 
-```
-
-```
-
 ## 🤝 Contribuindo
 
 1. Faça um Fork do projeto
